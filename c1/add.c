@@ -7,9 +7,10 @@
 #include <unistd.h>
 #include <errno.h>
 #include <wait.h>
+#include <string.h>
+#include <time.h>
 
 #define BUFFOR_SIZE 80
-#define PROC_NO 5
 
 double sum(double *vector, int a, int b) {
 	int i;
@@ -18,62 +19,61 @@ double sum(double *vector, int a, int b) {
 	return sum;
 }
 
+char *concat(const char *s1, const char *s2) {
+    char *result = malloc(strlen(s1) + strlen(s2) + 1);
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
+
 void on_usr1(int sig) {
 	printf("Usr1 signal [%d]\n", getpid());
 }
 
 int main(int argc, char **argv) {
+// vector size
+	char *filename = argc > 1 ? argv[1] : "vector.dat";
+	int proc_no = argc > 2 ? atoi(argv[2]) : 5;
+	FILE *f = fopen("vector.dat", "r");
+	char buffor[BUFFOR_SIZE+1];
+	fgets(buffor, BUFFOR_SIZE, f);
+	int n = atoi(buffor);
+
 // obtain access to shared memory segments
-	int shmid_result, shmid_range;
-	double *result;
+	int shmid_result, shmid_range, shmid_vector;
+	double *result, *vector;
 	int *range;
 
-	if ((shmid_result = shmget(9876, PROC_NO*sizeof(double), 0666)) == -1) {
+	if ((shmid_result = shmget(9876, proc_no*sizeof(double), 0666 | IPC_CREAT)) == -1) {
 		perror("shmget: shmget failed [result]\n");
 		exit(1);
 	}
 
-	if ((shmid_range = shmget(9875, (PROC_NO+1)*sizeof(int), 0666)) == -1) {
+	if ((shmid_range = shmget(9875, (proc_no+1)*sizeof(int), 0666 | IPC_CREAT)) == -1) {
 		perror("shmget: shmget failed [range]\n");
 		exit(1);
 	}
 
+	if ((shmid_vector = shmget(9874, n*sizeof(double), 0666 | IPC_CREAT)) == -1) {
+		perror("shmget: shmget failed [vector]\n");
+		exit(1);
+	}
+
 // attach shared memory segments
-	if ((result = shmat(shmid_result, NULL, 0)) == (char *) -1) {
+	if ((result = shmat(shmid_result, NULL, 0)) == (double *) -1) {
 		perror("shmat: shmat failed [result]\n");
 		exit(1);
 	}
 
-	if ((range = shmat(shmid_range, NULL, 0)) == (char *) -1) {
+	if ((range = shmat(shmid_range, NULL, 0)) == (int *) -1) {
 		perror("shmat: shmat failed [range]\n");
 		exit(1);
 	}
 
-// read vector from file
-	FILE *f = fopen("vector.dat", "r");
-    char buffor[BUFFOR_SIZE+1];
-	double *vector;
-	int n, i;
-
-	fgets(buffor, BUFFOR_SIZE, f);
- 	n = atoi(buffor);
-	vector = malloc(sizeof(double) * n);
-
-	for (i=0; i<n; i++) {
-		fgets(buffor, BUFFOR_SIZE, f);
-		vector[i] = atof(buffor);
+	if ((vector = shmat(shmid_vector, NULL, 0)) == (double *) -1) {
+		perror("shmat: shmat failed [vector]\n");
+		exit(1);
 	}
-
-	fclose(f);
-
-// set range for each child process
-	range[0] = 0;
-	for (i=1; i<PROC_NO; i++) range[i] = (int)(n / PROC_NO) * i;
-	range[PROC_NO] = n - 1;
-
-	printf("Range vector: [ ");
-	for (i=0; i<=PROC_NO; i++) printf("%d ", range[i]);
-	printf("]\n");
 
 // set USR1 signal action
 	sigset_t mask;
@@ -85,9 +85,10 @@ int main(int argc, char **argv) {
 	sigaction(SIGUSR1, &usr1, NULL);
 
 // what the fork
-	pid_t children[PROC_NO];
+	int i;
+	pid_t children[proc_no];
 	pid_t pid;
-	for (i=0; i<PROC_NO; i++)
+	for (i=0; i<proc_no; i++)
 		switch (pid = fork()) {
 			case -1:
 				perror("fork: fork failed [-1 dawg]");
@@ -102,20 +103,50 @@ int main(int argc, char **argv) {
 				children[i] = pid;
 		}
 
+// read vector from file
+	for (i=0; i<n; i++) {
+		fgets(buffor, BUFFOR_SIZE, f);
+		vector[i] = atof(buffor);
+	}
+
+	fclose(f);
+
+// set range for each child process
+	range[0] = 0;
+	for (i=1; i<proc_no; i++) range[i] = (int)(n / proc_no) * i;
+	range[proc_no] = n - 1;
+
+	printf("Range vector: [ ");
+	for (i=0; i<=proc_no; i++) printf("%d ", range[i]);
+	printf("]\n");
+
+
 // send SIGUSR1 to children
 	sleep(1);
-	for (i=0; i<PROC_NO; i++) kill(children[i], SIGUSR1);
+	for (i=0; i<proc_no; i++) kill(children[i], SIGUSR1);
 
+	clock_t time = clock();
 // wait for damn children
-	for (i=0; i<PROC_NO; i++)
+	for (i=0; i<proc_no; i++)
 		if (wait(0) == -1) {
 			perror("wait: wait failed [-1 dawg]");
 			exit(1);
 		}
+	time = clock() - time;
 
 // sum result + the last value in the vector
-	printf("THE RESULT IS: %f\n", sum(result, 0, PROC_NO) + vector[n-1]);
+	printf("\n\n");
+	printf("THE RESULT IS: %f\n", sum(result, 0, proc_no) + vector[n-1]);
+	printf("TIME TAKEN: %f\n", ((double)time)/CLOCKS_PER_SEC);
 
-	free(vector);
+// cleanup
+	shmdt(vector);
+	shmdt(range);
+	shmdt(result);
+
+	shmctl(shmid_result, IPC_RMID, NULL);
+	shmctl(shmid_vector, IPC_RMID, NULL);
+	shmctl(shmid_range, IPC_RMID, NULL);
+
 	return 0;
 }

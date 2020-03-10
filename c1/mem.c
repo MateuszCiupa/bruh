@@ -1,24 +1,25 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
-#define PROC_NO 5
+#include <time.h>
 
 int main(int argc, char **argv) {
-// create shared memory
-	int shmid_result, shmid_range;
+	int size = argc > 1 ? atoi(argv[1]) : 10;
+	double a = argc > 2 ? atof(argv[2]) : 0.0f;
+	double b = argc > 3 ? atof(argv[3]) : 100.0f;
+	char *fname = argc > 4 ? argv[4] : "vector.dat";
 
-	if ((shmid_result = shmget(9876, PROC_NO*sizeof(double), IPC_CREAT | 0666)) == -1) {
-		perror("shmget: shmget failed [result]\n");
-		exit(1);
+	FILE *f = fopen(fname, "w");
+
+	fprintf(f, "%d\n", size);
+
+	int i;
+	srand(time(0));
+	for (i=0; i<size; i++) {
+		double x = a + (((double) rand()) / RAND_MAX) * (b-a);
+		fprintf(f, "%f\n", x);
 	}
 
-	if ((shmid_range = shmget(9875, (PROC_NO+1)*sizeof(int), IPC_CREAT | 0666)) == -1) {
-		perror("shmget: shmget failed [range]\n");
-		exit(1);
-	}
+	fclose(f);
 
     return 0;
 }

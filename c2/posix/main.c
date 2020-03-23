@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <math.h>
 
 double global = 0;
+double frobenius = 0;
 pthread_mutex_t mymutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct margs {
@@ -20,6 +22,7 @@ void *thread_function(void *arg) {
     margs->C[margs->row][margs->col] = s;
     pthread_mutex_lock(&mymutex);
     global += s;
+    frobenius += s*s;
     pthread_mutex_unlock(&mymutex);
 }
 
@@ -117,5 +120,13 @@ int main(int argc, char *argv[]) {
 
     print_matrix(C, ma, nb);
     printf("Suma elementów macierzy wynosi: %f\n", global);
+    printf("Norma Frobeniusa wynosi: %f\n", sqrt(frobenius);
+    
+    for (i=0; i<ma; i++) free(A[i]);
+    free(A);
+    for (i=0; i<mb; i++) free(B[i]);
+    free(B);
+    for (i=0; i<ma; i++) free(C[i]);
+    free(C);
     return 0;
 }

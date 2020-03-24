@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
 
     print_matrix(C, ma, nb);
     printf("Suma elementów macierzy wynosi: %f\n", global);
-    printf("Norma Frobeniusa wynosi: %f\n", sqrt(frobenius);
+    printf("Norma Frobeniusa wynosi: %f\n", sqrt(frobenius));
     
     for (i=0; i<ma; i++) free(A[i]);
     free(A);

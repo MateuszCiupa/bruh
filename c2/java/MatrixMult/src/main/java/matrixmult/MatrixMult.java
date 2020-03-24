@@ -7,7 +7,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MatrixMult {
-    public static int x, y, B_pionowo = 0, B_poziomo = 0, A_pionowo = 0, A_poziomo = 0, sciana;
+
+    public static int B_poziomo = 0, B_pionowo = 0, A_poziomo = 0, A_pionowo = 0, sciana, poziom;
     public static float sum, frobenius;
 
     public static void main(String[] args) throws FileNotFoundException {
@@ -24,16 +25,18 @@ public class MatrixMult {
             x = B.rows();
             y = A.cols();
             numberOfMnozenia = x * y;
-            B_pionowo = 1;
-            A_poziomo = 1;
+            B_poziomo = 1;
+            A_pionowo = 1;
             sciana = A.rows();
+            poziom = y;
         } else {
             x = A.rows();
             y = B.cols();
             numberOfMnozenia = x * y;
-            B_poziomo = 1;
-            A_pionowo = 1;
+            B_pionowo = 1;
+            A_poziomo = 1;
             sciana = B.rows();
+            poziom = y;
         }
         Matrix C = new Matrix(x, y);
         System.out.println("Wczytalem A:");
@@ -44,8 +47,11 @@ public class MatrixMult {
 
         int threads = 5;
         obliczeniaNaWatek = numberOfMnozenia / threads;
-        
+
         for (int i = 0; i < threads; i++) {
+            if (numberOfMnozenia % threads != 0 && i == threads - 1) {
+                obliczeniaNaWatek = obliczeniaNaWatek + numberOfMnozenia % threads;
+            }
             Runnable r = new MyRunnable(xc, yc, obliczeniaNaWatek, A, B, C);
             new Thread(r).start();
             yc = yc + (xc + obliczeniaNaWatek) / y;
@@ -57,11 +63,11 @@ public class MatrixMult {
             Logger.getLogger(MatrixMult.class.getName()).log(Level.SEVERE, null, ex);
         }
         System.out.println("");
-        System.out.println("A * B:");
+        System.out.println("A*B:");
         print(C);
         System.out.println("Suma elementów: " + sum);
         System.out.println("Norma Frobeniusa: " + sqrt(frobenius));
-        
+
     }
 
     protected Matrix read(String fname) throws FileNotFoundException {
@@ -114,27 +120,27 @@ public class MatrixMult {
             int xxc = yc, yyc = xc;
             for (int i = 0; i < ile; i++) {
                 s = 0;
-                if (B_pionowo == 1 && A_poziomo == 1) {
+                if (B_poziomo == 1 && A_pionowo == 1) {
                     for (int j = 0; j < sciana; j++) {
                         s += A.get(j, yyc) * B.get(xxc, j);
                     }
                     C.set(xxc, yyc, s);
-                    frobenius = frobenius + s*s;
+                    frobenius = frobenius + s * s;
                     sum = sum + s;
                     yyc++;
-                    if (yyc >= sciana - 1) {
+                    if (yyc >= poziom) {
                         xxc++;
                         yyc = 0;
                     }
-                } else if (B_poziomo == 1 && A_pionowo == 1) {
+                } else if (B_pionowo == 1 && A_poziomo == 1) {
                     for (int j = 0; j < sciana; j++) {
                         s += A.get(xxc, j) * B.get(j, yyc);
                     }
                     C.set(xxc, yyc, s);
-                    frobenius = frobenius + s*s;
+                    frobenius = frobenius + s * s;
                     sum = sum + s;
                     yyc++;
-                    if (yyc >= sciana - 1) {
+                    if (yyc >= poziom) {
                         xxc++;
                         yyc = 0;
                     }

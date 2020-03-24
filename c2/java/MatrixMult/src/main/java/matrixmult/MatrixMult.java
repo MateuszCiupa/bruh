@@ -3,6 +3,7 @@ package matrixmult;
 import java.io.*;
 import static java.lang.Math.sqrt;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -11,12 +12,12 @@ public class MatrixMult {
     public static int B_poziomo = 0, B_pionowo = 0, A_poziomo = 0, A_pionowo = 0, sciana, poziom;
     public static float sum, frobenius;
 
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws FileNotFoundException, InterruptedException {
         MatrixMult mm = new MatrixMult();
         mm.begin(args);
     }
 
-    protected void begin(String[] args) throws FileNotFoundException {
+    protected void begin(String[] args) throws FileNotFoundException, InterruptedException {
         Matrix A, B;
         A = read("A.txt");
         B = read("B.txt");
@@ -39,29 +40,28 @@ public class MatrixMult {
             poziom = y;
         }
         Matrix C = new Matrix(x, y);
-        System.out.println("Wczytalem A:");
+        System.out.println("A:");
         print(A);
 
-        System.out.println("\nWczytalem B:");
+        System.out.println("\nB:");
         print(B);
 
         int threads = 5;
         obliczeniaNaWatek = numberOfMnozenia / threads;
+        CountDownLatch startSignal = new CountDownLatch(1);
+        CountDownLatch doneSignal = new CountDownLatch(threads);
 
         for (int i = 0; i < threads; i++) {
             if (numberOfMnozenia % threads != 0 && i == threads - 1) {
                 obliczeniaNaWatek = obliczeniaNaWatek + numberOfMnozenia % threads;
             }
-            Runnable r = new MyRunnable(xc, yc, obliczeniaNaWatek, A, B, C);
+            Runnable r = new MyRunnable(xc, yc, obliczeniaNaWatek, A, B, C, startSignal, doneSignal);
             new Thread(r).start();
             yc = yc + (xc + obliczeniaNaWatek) / y;
             xc = (xc + obliczeniaNaWatek) % y;
         }
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException ex) {
-            Logger.getLogger(MatrixMult.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        startSignal.countDown();
+        doneSignal.await();
         System.out.println("");
         System.out.println("A*B:");
         print(C);
@@ -104,18 +104,27 @@ public class MatrixMult {
 
         int xc, yc, ile;
         Matrix A, B, C;
+        private final CountDownLatch startSignal;
+        private final CountDownLatch doneSignal;
 
-        public MyRunnable(int xc, int yc, int ile, Matrix A, Matrix B, Matrix C) {
+        public MyRunnable(int xc, int yc, int ile, Matrix A, Matrix B, Matrix C, CountDownLatch startSignal, CountDownLatch doneSignal) {
             this.xc = xc;
             this.yc = yc;
             this.ile = ile;
             this.A = A;
             this.B = B;
             this.C = C;
+            this.startSignal = startSignal;
+            this.doneSignal = doneSignal;
         }
 
         @Override
         public void run() {
+            try {
+                startSignal.await();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(MatrixMult.class.getName()).log(Level.SEVERE, null, ex);
+            }
             float s;
             int xxc = yc, yyc = xc;
             for (int i = 0; i < ile; i++) {
@@ -146,6 +155,7 @@ public class MatrixMult {
                     }
                 }
             }
+            doneSignal.countDown();
         }
     }
 

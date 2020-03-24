@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 
 public class MatrixMult {
 
-    public static int B_poziomo = 0, B_pionowo = 0, A_poziomo = 0, A_pionowo = 0, sciana, poziom;
+    public static int B_poziomo = 0, B_pionowo = 0, sciana, poziom;
     public static float sum, frobenius;
 
     public static void main(String[] args) throws FileNotFoundException, InterruptedException {
@@ -27,7 +27,6 @@ public class MatrixMult {
             y = A.cols();
             numberOfMnozenia = x * y;
             B_poziomo = 1;
-            A_pionowo = 1;
             sciana = A.rows();
             poziom = y;
         } else {
@@ -35,7 +34,6 @@ public class MatrixMult {
             y = B.cols();
             numberOfMnozenia = x * y;
             B_pionowo = 1;
-            A_poziomo = 1;
             sciana = B.rows();
             poziom = y;
         }
@@ -45,8 +43,8 @@ public class MatrixMult {
 
         System.out.println("\nB:");
         print(B);
-
-        int threads = 5;
+        
+        int threads = 5; // liczba wątków do utworzenia
         obliczeniaNaWatek = numberOfMnozenia / threads;
         CountDownLatch startSignal = new CountDownLatch(1);
         CountDownLatch doneSignal = new CountDownLatch(threads);
@@ -102,15 +100,15 @@ public class MatrixMult {
 
     public class MyRunnable implements Runnable {
 
-        int xc, yc, ile;
+        int xc, yc, obliczeniaNaWatek;
         Matrix A, B, C;
         private final CountDownLatch startSignal;
         private final CountDownLatch doneSignal;
 
-        public MyRunnable(int xc, int yc, int ile, Matrix A, Matrix B, Matrix C, CountDownLatch startSignal, CountDownLatch doneSignal) {
+        public MyRunnable(int xc, int yc, int obliczeniaNaWatek, Matrix A, Matrix B, Matrix C, CountDownLatch startSignal, CountDownLatch doneSignal) {
             this.xc = xc;
             this.yc = yc;
-            this.ile = ile;
+            this.obliczeniaNaWatek = obliczeniaNaWatek;
             this.A = A;
             this.B = B;
             this.C = C;
@@ -126,32 +124,32 @@ public class MatrixMult {
                 Logger.getLogger(MatrixMult.class.getName()).log(Level.SEVERE, null, ex);
             }
             float s;
-            int xxc = yc, yyc = xc;
-            for (int i = 0; i < ile; i++) {
+            int yyc = yc, xxc = xc;
+            for (int i = 0; i < obliczeniaNaWatek; i++) {
                 s = 0;
-                if (B_poziomo == 1 && A_pionowo == 1) {
+                if (B_poziomo == 1) {
                     for (int j = 0; j < sciana; j++) {
-                        s += A.get(j, yyc) * B.get(xxc, j);
+                        s += A.get(j, xxc) * B.get(yyc, j);
                     }
-                    C.set(xxc, yyc, s);
+                    C.set(yyc, xxc, s);
                     frobenius = frobenius + s * s;
                     sum = sum + s;
-                    yyc++;
-                    if (yyc >= poziom) {
-                        xxc++;
-                        yyc = 0;
+                    xxc++;
+                    if (xxc >= poziom) {
+                        yyc++;
+                        xxc = 0;
                     }
-                } else if (B_pionowo == 1 && A_poziomo == 1) {
+                } else if (B_pionowo == 1) {
                     for (int j = 0; j < sciana; j++) {
-                        s += A.get(xxc, j) * B.get(j, yyc);
+                        s += A.get(yyc, j) * B.get(j, xxc);
                     }
-                    C.set(xxc, yyc, s);
+                    C.set(yyc, xxc, s);
                     frobenius = frobenius + s * s;
                     sum = sum + s;
-                    yyc++;
-                    if (yyc >= poziom) {
-                        xxc++;
-                        yyc = 0;
+                    xxc++;
+                    if (xxc >= poziom) {
+                        yyc++;
+                        xxc = 0;
                     }
                 }
             }

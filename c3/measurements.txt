@@ -1,0 +1,44 @@
+PRIR/PRIR2
+
+    N=1
+    Overall program time:  99.34925627708435
+    Calculations time:  16.424539804458618
+
+    N=2
+    Overall program time:  98.28052830696106
+    Calculations time:  15.431653499603271
+
+    N=3
+    Overall program time:  102.62118721008301
+    Calculations time:  19.784355878829956
+
+    N=4
+    Overall program time:  105.17261099815369
+    Calculations time:  22.22886085510254
+
+    N=5
+    Overall program time:  111.43842339515686
+    Calculations time:  28.685632944107056
+
+
+LOCAL
+
+    N=1
+    Overall program time: 25.044070720672607
+    Calculations time: 18.62507390975952
+
+    N=2
+    Overall program time: 25.57684826850891
+    Calculations time: 18.12812829017639
+
+    N=3
+    Overall program time: 24.710803747177124
+    Calculations time: 17.796956062316895
+
+    N=4
+    Overall program time: 23.82628345489502
+    Calculations time: 16.707369804382324
+
+    N=5
+    Overall program time: 24.873983144760132
+    Calculations time: 17.140642642974854

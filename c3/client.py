@@ -9,6 +9,8 @@ class QueueManager(BaseManager): pass
 TaskData = namedtuple('TaskData', 'id row vector')
 TaskResult = namedtuple('TaskResult', 'id row')
 
+program_time = time()
+
 def matrix_read(name):
     with open(name, 'r') as f:
         ma = int(f.readline())
@@ -47,7 +49,7 @@ for task_id, row in enumerate(A):
 result_queue = queue_connect('result_queue', ip, port)
 print('connected to result_queue')
 
-t = time()
+calc_time = time()
 
 while result_queue.qsize() < len(A):
     continue
@@ -69,4 +71,5 @@ while True:
 print()
 print('Result vector: ')
 vector_print(results)
-print(f'Time taken: {time()-t}')
+print(f'Overall program time: {time()-program_time}')
+print(f'Calculations time: {time()-calc_time}')

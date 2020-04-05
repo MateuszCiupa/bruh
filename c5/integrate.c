@@ -1,7 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<mpi.h>
-#include<unistd.h>
 #include<math.h>
 
 double fun(double x) {

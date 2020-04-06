@@ -1,0 +1,2 @@
+#!/bin/sh
+mpicc -o integrate integrate.c -l m

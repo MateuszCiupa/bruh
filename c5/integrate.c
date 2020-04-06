@@ -1,11 +1,10 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<mpi.h>
-#include<unistd.h>
 #include<math.h>
 
 double fun(double x) {
-    //return pow(x, 3) * pow(x, 2) * x + 7;
+    //return pow(x, 3) + pow(x, 2) + x + 7;
     return pow(x, 2);
 }
 

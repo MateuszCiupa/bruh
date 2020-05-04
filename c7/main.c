@@ -78,11 +78,11 @@ void reduce(int nwords, char *words, int *indexes, int *list)
   MPI_Scatter(count, 1, MPI_INT, &nwords, 1, MPI_INT, master, MPI_COMM_WORLD);
   debug("[%d] Got %d words to reduce\n", world_rank, nwords);
 
-  windexes = calloc(nwords, sizeof(int));
+  windexes = malloc(nwords * sizeof(int));
 
   MPI_Scatter(count_bytes, 1, MPI_INT, &nbytes, 1, MPI_INT, master, MPI_COMM_WORLD);
   
-  wlist = calloc(nbytes, sizeof(int));
+  wlist = malloc(nbytes * sizeof(*wlist));
 
   debug("[%d] Got %d bytes of list to reduce\n", world_rank, nbytes);
 
@@ -212,26 +212,26 @@ int main(int argc, char *argv[])
 
   if (world_rank == master)
   {
-    int bytes, group;
-    char *name_of_file = "access.log";
+    int bytes, group = 0;
+    char *name_of_file;
     char c;
     int len;
     char *w;
 
+    if (argc > 1)
+    {
+      if(strcmp("-time", argv[1]) == 0) {
+        group = 0;
+      } 
+      else if(strcmp("-addr", argv[1]) == 0) {
+        group = 1;
+      } 
+      else if(strcmp("-stat", argv[1]) == 0) {
+        group = 2;
+      }
+    }
 
-  if(strcmp("-time", argv[1]) == 0) {
-    group = 0;
-  } 
-  else if(strcmp("-addr", argv[1]) == 0) {
-    group = 1;
-  } 
-  else if(strcmp("-stat", argv[1]) == 0) {
-    group = 2;
-  }
-
-  if(argv[2] != NULL) {
-    name_of_file = argv[2];
-  }
+    name_of_file = argc > 2 ? argv[2] : "access.log";
   
     read_data(name_of_file, &words, &indexes, group);
     

@@ -205,18 +205,35 @@ int main(int argc, char *argv[])
   int *out_indexes = NULL;
   int *out_occurs = NULL;
   int buffer_size = 1024;
+
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
   if (world_rank == master)
   {
-    int bytes;
+    int bytes, group;
+    char *name_of_file = "access.log";
     char c;
     int len;
     char *w;
 
-    read_data("access.log", &words, &indexes, 1);
+
+  if(strcmp("-time", argv[1]) == 0) {
+    group = 0;
+  } 
+  else if(strcmp("-addr", argv[1]) == 0) {
+    group = 1;
+  } 
+  else if(strcmp("-stat", argv[1]) == 0) {
+    group = 2;
+  }
+
+  if(argv[2] != NULL) {
+    name_of_file = argv[2];
+  }
+  
+    read_data(name_of_file, &words, &indexes, group);
     
     /* policz slowa */
     w = words;

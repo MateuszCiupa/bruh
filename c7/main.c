@@ -213,7 +213,6 @@ int main(int argc, char *argv[])
   if (world_rank == master)
   {
     int bytes, group = 0;
-    char *name_of_file;
     char c;
     int len;
     char *w;
@@ -230,10 +229,8 @@ int main(int argc, char *argv[])
         group = 2;
       }
     }
-
-    name_of_file = argc > 2 ? argv[2] : "access.log";
   
-    read_data(name_of_file, &words, &indexes, group);
+    read_data(argc > 2 ? argv[2] : "access.log", &words, &indexes, group);
     
     /* policz slowa */
     w = words;
